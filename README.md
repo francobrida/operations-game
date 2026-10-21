@@ -25,7 +25,7 @@ for the client in Excel, and write the Python check that stops it from happening
 |---|---|---|
 | Bash | Navigation, files, grep/find, pipes, redirection, permissions, scripts, `$(…)`, log digging with `cut \| sort \| uniq -c` | ✅ 62 missions |
 | SQL | SELECT to CTEs: filters, aggregates, GROUP BY/HAVING, duplicates, JOINs and orphans, data cleaning, date filters | ✅ 44 missions |
-| Excel | Formulas, COUNTIF/SUMIF, lookups, duplicates, a guided pivot table | next |
+| Excel | Formulas, COUNTIF/SUMIF, $ references, VLOOKUP/XLOOKUP, sort/filter, duplicates, pivot tables | ✅ 30 missions |
 | Python | CSV processing, duplicate detection, a small automation script | planned |
 | MongoDB | find(), projections, a basic aggregation (optional) | planned |
 | Final Case | One incident across all the tools, closed with a written report | planned |
@@ -62,6 +62,7 @@ Tests:
 ```
 node tests/bash.test.js
 node tests/sql.test.js
+node tests/excel.test.js
 ```
 
 ## Project layout
@@ -74,6 +75,7 @@ js/app.js               menu, level screens, cheat sheet, sync, routing
 js/storage.js           progress, mistakes and sync codes in localStorage
 js/tracks/bash/         simulated shell, missions, terminal view
 js/tracks/sql/          SQLite wrapper and result comparison, missions, editor view
+js/tracks/excel/        spreadsheet engine (formulas, fill, sort, filter, pivot), missions, grid view
 vendor/                 sql.js 1.10.3 (SQLite 3.45.2, MIT license)
 tests/                  Node test suites
 ```
