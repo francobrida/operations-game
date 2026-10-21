@@ -273,3 +273,16 @@ footer { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wr
 .cheat code { color: var(--accent); white-space: nowrap; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ---- MongoDB and the Final Case ---- */
+.mongo-out { max-height: 420px; overflow: auto; }
+button.final { cursor: pointer; font: inherit; width: 100%; }
+button.final:hover { border-color: var(--accent); }
+.case-text { font-family: inherit; line-height: 1.5; }
+.case-model { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+.case-model h3 { margin: 6px 0 0; font-size: 14px; }
+.case-model p { margin: 0; line-height: 1.55; }
+.case-check { display: flex; gap: 8px; align-items: baseline; font-size: 13.5px; color: var(--text-dim); }
+.case-check b { color: var(--text); }
+.case-summary { text-align: left; display: flex; flex-direction: column; gap: 6px; }
+.case-summary ol { margin: 0; padding-left: 20px; color: var(--text-dim); font-size: 13.5px; }

@@ -27,8 +27,8 @@ for the client in Excel, and write the Python check that stops it from happening
 | SQL | SELECT to CTEs: filters, aggregates, GROUP BY/HAVING, duplicates, JOINs and orphans, data cleaning, date filters | ✅ 44 missions |
 | Excel | Formulas, COUNTIF/SUMIF, $ references, VLOOKUP/XLOOKUP, sort/filter, duplicates, pivot tables | ✅ 30 missions |
 | Python | Variables to functions, the csv module, sets and dicts for duplicates, an automation script that writes a report | ✅ 25 missions |
-| MongoDB | find(), projections, a basic aggregation (optional) | planned |
-| Final Case | One incident across all the tools, closed with a written report | planned |
+| MongoDB | find(), projections, sort/limit, aggregate() with $match and $group (optional) | ✅ 10 missions |
+| Final Case | One incident across all the tools, closed with a written report, final score and weak spots | ✅ 6 steps |
 
 ## How it works
 
@@ -68,6 +68,8 @@ node tests/bash.test.js
 node tests/sql.test.js
 node tests/excel.test.js
 node tests/python.test.js   # uses your local python
+node tests/mongo.test.js
+node tests/final.test.js
 ```
 
 ## Project layout
@@ -82,6 +84,8 @@ js/tracks/bash/         simulated shell, missions, terminal view
 js/tracks/sql/          SQLite wrapper and result comparison, missions, editor view
 js/tracks/excel/        spreadsheet engine (formulas, fill, sort, filter, pivot), missions, grid view
 js/tracks/python/       test harness (Python), Pyodide worker runner, missions, editor view
+js/tracks/mongo/        tiny mongosh-style query engine, missions, shell view
+js/tracks/final/        the Final Case: reuses the track views step by step, plus the written wrap-up
 vendor/                 sql.js 1.10.3 (SQLite 3.45.2, MIT license)
 tests/                  Node test suites
 ```

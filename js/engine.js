@@ -183,6 +183,7 @@
           h('li', null, h('b', null, st.points), ' points in this level'),
           h('li', null, h('b', null, st.review), st.review === 1 ? ' mission to review' : ' missions to review')),
         st.done < st.total ? h('p', { class: 'muted' }, 'Some missions are still pending: the empty squares at the top.') : null,
+        track.summary ? track.summary() : null,
         h('div', { class: 'sol-actions' },
           hasNext ? h('button', { class: 'primary', type: 'button', onclick: () => nav.toMission(li + 1, firstPending(track, li + 1)) }, 'Next level ▸') : null,
           h('button', { class: 'ghost', type: 'button', onclick: nav.toTrack }, 'Back to levels'))));

@@ -12,6 +12,9 @@
     { id: 'mongo', icon: '{ }', title: 'MongoDB', blurb: 'Documents, find() and an aggregation of amounts per artist.', phase: 5, optional: true },
   ];
   const FINAL_REQUIRES = ['bash', 'sql', 'excel', 'python'];
+  const FINAL_META = { id: 'final', icon: '★', title: 'The Final Case', blurb: '"You paid us twice for the same song in August." A full Operations case mixing SQL, Bash, Excel and Python, closed with a short written report.' };
+  const finalMissing = () => FINAL_REQUIRES.filter(id => { const p = progress(id); return !p || !p.topDone; });
+  const metaOf = id => TRACKS.find(t => t.id === id) || FINAL_META;
   const app = document.getElementById('app');
   let current = null;
 
@@ -36,6 +39,7 @@
   function replaceHash(hash) { try { history.replaceState(null, '', hash); } catch (e) { /* file:// quirks */ } }
   function parse() {
     const p = location.hash.replace(/^#\/?/, '').split('/');
+    if (p[1] === 'final' && finalMissing().length) return { view: 'home' };
     if (p[0] === 't' && tracks()[p[1]]) return { view: 'track', id: p[1] };
     if (p[0] === 'p' && tracks()[p[1]]) {
       const t = tracks()[p[1]];
@@ -75,11 +79,14 @@
           p.review ? h('span', { class: 'warn-text' }, p.review + ' to review') : null, h('span', null, p.score + ' pts')) : null);
     });
 
-    const missing = FINAL_REQUIRES.filter(id => { const p = progress(id); return !p || !p.topDone; });
-    const finalCard = h('div', { class: 'final' + (missing.length ? ' locked' : '') },
-      h('div', { class: 'tcard-head' }, h('span', { class: 'icon' }, '★'), h('span', { class: 'tcard-title' }, 'The Final Case'),
-        h('span', { class: 'badge' }, missing.length ? 'Locked' : 'Coming soon · phase 6')),
-      h('p', null, '"You paid us twice for the same song in August." A full Operations case mixing SQL, Bash, Excel and Python, closed with a short written report.'),
+    const missing = finalMissing();
+    const fp = progress('final');
+    const finalCard = h(missing.length ? 'div' : 'button', { class: 'final' + (missing.length ? ' locked' : ''), type: 'button', onclick: missing.length ? null : () => go('#/t/final') },
+      h('div', { class: 'tcard-head' }, h('span', { class: 'icon' }, '★'), h('span', { class: 'tcard-title' }, FINAL_META.title),
+        h('span', { class: 'badge' + (fp && fp.done === fp.total ? ' ok' : '') }, missing.length ? 'Locked' : fp && fp.done === fp.total ? 'Complete' : 'Unlocked')),
+      h('p', null, FINAL_META.blurb),
+      !missing.length && fp ? progressBar(fp.done, fp.total) : null,
+      !missing.length && fp ? h('div', { class: 'tcard-foot' }, h('span', null, fp.done + '/' + fp.total + ' steps'), h('span', null, fp.score + ' pts')) : null,
       h('ul', { class: 'reqs' }, ...FINAL_REQUIRES.map(id => {
         const p = progress(id); const meta = TRACKS.find(t => t.id === id);
         const okNow = p && p.topDone;
@@ -87,7 +94,7 @@
       })),
       h('p', { class: 'muted small' }, 'MongoDB is not required to unlock it.'));
 
-    const total = TRACKS.reduce((n, t) => n + (progress(t.id) ? progress(t.id).score : 0), 0);
+    const total = TRACKS.concat(FINAL_META).reduce((n, t) => n + (progress(t.id) ? progress(t.id).score : 0), 0);
     app.replaceChildren(
       h('header', { class: 'top' },
         h('div', { class: 'brand' }, h('h1', null, 'Operations Trainer'), h('span', null, OT.data.company + ' · hands-on data operations practice')),
@@ -114,7 +121,7 @@
 
   /* ---- track screen ---- */
   function renderTrack(t) {
-    const meta = TRACKS.find(x => x.id === t.id);
+    const meta = metaOf(t.id);
     const p = progress(t.id);
     const levels = t.levels.map((lv, li) => {
       const st = OT.engine.levelStats(t, li);
