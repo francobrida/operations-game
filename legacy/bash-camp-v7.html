@@ -1,0 +1,1353 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Bash Camp</title>
+<meta name="description" content="A tiny browser terminal game for practicing real Bash commands, mission by mission.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef1ed; --panel:#ffffff; --panel-2:#f5f7f4; --border:#cfd8d1;
+    --text:#1b2621; --text-dim:#5c6f64;
+    --accent:#1f8f5c; --accent-soft:#e3f2ea;
+    --warn:#9a6a12; --warn-soft:#f7ecd6;
+    --err:#b3444a; --err-soft:#f9e6e7;
+    --font-ui:'Sora',system-ui,-apple-system,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0c1210; --panel:#121a17; --panel-2:#0f1614; --border:#223028;
+      --text:#d9e6df; --text-dim:#7d9389;
+      --accent:#5fe3a0; --accent-soft:#173425;
+      --warn:#e3b95f; --warn-soft:#332a12;
+      --err:#e2777c; --err-soft:#331919;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0c1210; --panel:#121a17; --panel-2:#0f1614; --border:#223028;
+    --text:#d9e6df; --text-dim:#7d9389;
+    --accent:#5fe3a0; --accent-soft:#173425;
+    --warn:#e3b95f; --warn-soft:#332a12;
+    --err:#e2777c; --err-soft:#331919;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--font-ui);
+    margin:0; padding:16px; padding-block:20px;
+    min-height:100%;
+  }
+  .wrap{max-width:1000px; margin:0 auto; display:flex; flex-direction:column; gap:14px;}
+
+  header{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand h1{font-size:19px; margin:0; font-weight:700; letter-spacing:.2px;}
+  .brand span{font-size:12px; color:var(--text-dim);}
+  .stat-row{display:flex; align-items:center; gap:14px; font-size:13px; color:var(--text-dim);}
+  .stat-row b{color:var(--text); font-weight:600;}
+  .progress-track{width:120px; height:6px; border-radius:4px; background:var(--panel-2); border:1px solid var(--border); overflow:hidden;}
+  .progress-fill{height:100%; background:var(--accent); border-radius:4px; transition:width .35s ease;}
+  button.ghost{
+    font-family:var(--font-ui); font-size:12px; font-weight:600; color:var(--text-dim);
+    background:transparent; border:1px solid var(--border); border-radius:7px; padding:6px 10px;
+    cursor:pointer;
+  }
+  button.ghost:hover{color:var(--text); border-color:var(--accent);}
+
+  .board{display:flex; gap:14px; align-items:flex-start;}
+  @media (max-width:760px){ .board{flex-direction:column;} }
+
+  .mission{
+    flex:0 0 268px; background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:16px; display:flex; flex-direction:column; gap:10px;
+  }
+  @media (max-width:760px){ .mission{flex:1 1 auto; width:100%;} }
+  .mission .tag{
+    align-self:flex-start; font-size:11px; font-weight:600; letter-spacing:.4px; text-transform:uppercase;
+    color:var(--accent); background:var(--accent-soft); border-radius:5px; padding:3px 8px;
+  }
+  .mission h2{font-size:15px; margin:0; line-height:1.35;}
+  .mission p{font-size:13px; line-height:1.55; color:var(--text-dim); margin:0;}
+  .syntaxBox summary{
+    cursor:pointer; font-size:11px; font-weight:600; letter-spacing:.3px; text-transform:uppercase;
+    color:var(--accent); list-style:none; user-select:none;
+  }
+  .syntaxBox summary::-webkit-details-marker{ display:none; }
+  .syntaxBox summary::before{ content:'\25B8  '; }
+  .syntaxBox[open] summary::before{ content:'\25BE  '; }
+  .syntaxBox .syntaxText{
+    font-family:var(--font-mono); font-size:12px; color:var(--accent);
+    background:var(--accent-soft); border-radius:7px; padding:8px 10px; line-height:1.5;
+    white-space:pre-wrap; word-break:break-word; margin-top:7px;
+  }
+  .hintBox summary{
+    cursor:pointer; font-size:12px; font-weight:600; color:var(--text-dim); list-style:none;
+    user-select:none;
+  }
+  .hintBox summary::-webkit-details-marker{ display:none; }
+  .hintBox summary:hover{ color:var(--accent); }
+  .hintBox summary::before{ content:'\25B8  '; }
+  .hintBox[open] summary::before{ content:'\25BE  '; }
+  .hintBox .hintText{
+    font-size:12px; color:var(--text-dim); margin-top:7px; line-height:1.55;
+    padding:9px 10px; background:var(--panel-2); border-radius:7px; border:1px solid var(--border);
+  }
+  .mission .score{font-size:12px; color:var(--text-dim); border-top:1px solid var(--border); padding-top:10px; margin-top:2px;}
+  .mission .score b{color:var(--accent); font-family:var(--font-mono);}
+
+  .term{
+    flex:1 1 auto; min-width:0; background:var(--panel-2); border:1px solid var(--border); border-radius:12px;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .term-bar{
+    display:flex; gap:6px; align-items:center; padding:9px 12px; border-bottom:1px solid var(--border);
+  }
+  .dot{width:9px; height:9px; border-radius:50%; background:var(--border);}
+  .term-title{margin-left:6px; font-size:11px; color:var(--text-dim); font-family:var(--font-mono);}
+  .term-body{
+    font-family:var(--font-mono); font-size:13px; line-height:1.6;
+    padding:14px; height:360px; overflow-y:auto; white-space:pre-wrap; word-break:break-word;
+  }
+  .line{margin:0 0 2px 0;}
+  .line.cmd{color:var(--text-dim);}
+  .line.cmd .p{color:var(--accent);}
+  .line.out{color:var(--text);}
+  .line.err{color:var(--err);}
+  .line.hint{color:var(--warn);}
+  .line.tip{color:var(--accent);}
+  .line.ok{color:var(--accent); font-weight:600;}
+  .line.sys{color:var(--text-dim); font-style:italic;}
+  .term-input-row{display:flex; align-items:center; gap:8px; padding:10px 12px; border-top:1px solid var(--border);}
+  .prompt{font-family:var(--font-mono); font-size:13px; color:var(--accent); white-space:pre;}
+  #cmdInput{
+    flex:1 1 auto; background:transparent; border:none; outline:none; color:var(--text);
+    font-family:var(--font-mono); font-size:13px; min-width:0;
+  }
+  #cmdInput::placeholder{color:var(--text-dim); opacity:.6;}
+
+  .finished{display:flex; flex-direction:column; gap:8px; align-items:flex-start;}
+  .finished h2{margin:0; font-size:16px;}
+  code.k{font-family:var(--font-mono); background:var(--panel-2); border:1px solid var(--border); border-radius:4px; padding:1px 5px; font-size:12px;}
+  footer{font-size:11px; color:var(--text-dim); text-align:center;}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Bash Camp</h1>
+      <span>learn the terminal by doing missions</span>
+    </div>
+    <div class="stat-row">
+      <span id="levelLabel">Level 1 / 50</span>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <button class="ghost" id="resetBtn" type="button">Reset progress</button>
+    </div>
+  </header>
+
+  <div class="board">
+    <div class="mission" id="missionCard">
+      <span class="tag" id="missionTag">Navigation</span>
+      <h2 id="missionTitle">Where are you?</h2>
+      <p id="missionBrief">Loading...</p>
+      <details class="syntaxBox" id="missionSyntax">
+        <summary>Show syntax</summary>
+        <div class="syntaxText" id="missionSyntaxText"></div>
+      </details>
+      <details class="hintBox" id="hintBox">
+        <summary>Need a hint?</summary>
+        <div class="hintText" id="hintText"></div>
+      </details>
+      <div class="score">Score: <b id="scoreVal">0</b></div>
+    </div>
+
+    <div class="term">
+      <div class="term-bar">
+        <div class="dot" style="background:#e2777c"></div>
+        <div class="dot" style="background:#e3b95f"></div>
+        <div class="dot" style="background:#5fe3a0"></div>
+        <span class="term-title" id="termCwdLabel">yury@bashcamp:~</span>
+      </div>
+      <div class="term-body" id="termBody"></div>
+      <div class="term-input-row">
+        <span class="prompt" id="promptLabel">~$</span>
+        <input id="cmdInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type a command and press Enter">
+      </div>
+    </div>
+  </div>
+
+  <footer>Nothing here touches your real files  -  it's all a made-up drive that lives in this tab. Type <code class="k">help</code> any time.</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- tiny fake bash interpreter ---------------- */
+
+  function f(content, exec){ return { type:'file', content, exec: !!exec }; }
+  function dir(children){ return { type:'dir', children }; }
+
+  function makeWorldFS(){
+    return dir({
+      'notes.txt': f('Buy milk\nCall Sam\n'),
+      'old.log': f('2023-01-01 startup ok\n'),
+      'readme.txt': f('Welcome to the intern drive!\nEverything you need is somewhere in here.\n'),
+      'run.sh': f('#!/bin/bash\necho "Deploy complete."\n'),
+      'setup.sh': f('#!/bin/bash\necho "Setup done."\n'),
+      'cleanup.sh': f('#!/bin/bash\necho "Cleanup done."\n'),
+      'log.txt': f('System boot at 08:00\n'),
+      'photos': dir({
+        'beach.jpg': f('[binary]'),
+        '2024_trip.jpg': f('[binary]'),
+      }),
+      'notes': dir({
+        'todo.txt': f('finish onboarding\nask about parking\n'),
+      }),
+      'reports': dir({
+        'q1.txt': f('Q1 was steady. invoice #221 attached separately.\n'),
+        'q2.txt': f('Q2 numbers pending. Urgent: chase Vendor.\n'),
+        'alerts.txt': f('URGENT: renew the vendor contract by Friday.\n'),
+        'archive': dir({
+          'budget.csv': f('month,amount\njan,200\nfeb,180\n'),
+        }),
+      }),
+    });
+  }
+
+  function resolvePath(cwd, pathStr){
+    if(pathStr == null) pathStr = '.';
+    let segs = (pathStr.startsWith('/') || pathStr === '~' || pathStr.startsWith('~/')) ? [] : cwd.slice();
+    const rest = pathStr.replace(/^~\/?/, '').replace(/^\/+/, '');
+    for(const part of rest.split('/')){
+      if(part === '' || part === '.') continue;
+      if(part === '..'){ segs.pop(); continue; }
+      segs.push(part);
+    }
+    return segs;
+  }
+  function getNode(fs, segs){
+    let node = fs;
+    for(const s of segs){
+      if(!node || node.type !== 'dir' || !node.children[s]) return null;
+      node = node.children[s];
+    }
+    return node;
+  }
+  function getParent(fs, segs){ return segs.length ? getNode(fs, segs.slice(0,-1)) : null; }
+  function basename(segs){ return segs[segs.length-1] || ''; }
+  function displayPath(cwd){ return '/home/yury' + (cwd.length ? '/' + cwd.join('/') : ''); }
+  function promptPath(cwd){ return cwd.length ? '~/' + cwd.join('/') : '~'; }
+
+  function walkAll(node, prefix){
+    let out = [];
+    for(const name of Object.keys(node.children).sort()){
+      const child = node.children[name];
+      const p = prefix.concat([name]);
+      out.push({ segs:p, node:child });
+      if(child.type === 'dir') out = out.concat(walkAll(child, p));
+    }
+    return out;
+  }
+  function globToRegex(glob){
+    const esc = glob.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.');
+    return new RegExp('^' + esc + '$');
+  }
+
+  /* ---- parsing ---- */
+  function scanTopLevel(str){
+    const res = []; let q = null; let parenDepth = 0;
+    for(let i=0;i<str.length;i++){
+      const c = str[i];
+      if(q){ if(c===q) q=null; continue; }
+      if(parenDepth>0){
+        if(c==='(') parenDepth++;
+        else if(c===')') parenDepth--;
+        continue;
+      }
+      if(c==='"'||c==="'"){ q=c; continue; }
+      if(c==='$' && str[i+1]==='('){ parenDepth=1; i++; continue; }
+      if(c==='|'){ res.push({i,tok:'|'}); continue; }
+      if(c===';'){ res.push({i,tok:';'}); continue; }
+      if(c==='>'){ if(str[i+1]==='>'){ res.push({i,tok:'>>'}); i++; } else res.push({i,tok:'>'}); continue; }
+    }
+    return res;
+  }
+  function tokenize(str){
+    const tokens = []; let cur=''; let q=null; let has=false; let parenDepth=0;
+    for(let i=0;i<str.length;i++){
+      const c = str[i];
+      if(q){ if(c===q){ q=null; } else { cur+=c; } continue; }
+      if(parenDepth>0){
+        if(c==='(') parenDepth++;
+        else if(c===')') parenDepth--;
+        cur+=c; has=true;
+        continue;
+      }
+      if(c==='"'||c==="'"){ q=c; has=true; continue; }
+      if(c==='$' && str[i+1]==='('){ cur+='$('; has=true; i++; parenDepth=1; continue; }
+      if(/\s/.test(c)){ if(has||cur.length){ tokens.push(cur); cur=''; has=false; } continue; }
+      cur+=c; has=true;
+    }
+    if(has||cur.length) tokens.push(cur);
+    return tokens;
+  }
+  function splitByIndices(str, indices){
+    const parts = []; let start = 0;
+    for(const idx of indices){ parts.push(str.slice(start, idx)); start = idx+1; }
+    parts.push(str.slice(start));
+    return parts;
+  }
+  function parseStatement(stmt){
+    const marks = scanTopLevel(stmt);
+    const redirMark = marks.find(m => m.tok==='>' || m.tok==='>>');
+    let body = stmt, redir = null;
+    if(redirMark){
+      const targetRaw = stmt.slice(redirMark.i + redirMark.tok.length);
+      redir = { append: redirMark.tok==='>>', target: tokenize(targetRaw)[0] };
+      body = stmt.slice(0, redirMark.i);
+    }
+    const pipeIdx = scanTopLevel(body).filter(m=>m.tok==='|').map(m=>m.i);
+    const stages = splitByIndices(body, pipeIdx).map(tokenize).filter(s=>s.length);
+    return { stages, redir };
+  }
+  function parseInput(raw){
+    const semiIdx = scanTopLevel(raw).filter(m=>m.tok===';').map(m=>m.i);
+    return splitByIndices(raw, semiIdx).map(s=>s.trim()).filter(Boolean).map(parseStatement);
+  }
+
+  /* ---- commands ---- */
+  function cmd_pwd(a, ctx){ return { stdout: displayPath(ctx.cwd) }; }
+  function cmd_ls(a, ctx){
+    const target = a.filter(x=>!x.startsWith('-'))[0];
+    const segs = resolvePath(ctx.cwd, target || '.');
+    const node = getNode(ctx.fs, segs);
+    if(!node) return { error:`ls: cannot access '${target}': No such file or directory` };
+    if(node.type==='file') return { stdout: basename(segs) };
+    const names = Object.keys(node.children).sort();
+    return { stdout: names.map(n => node.children[n].type==='dir' ? n+'/' : n).join('\n') };
+  }
+  function cmd_cd(a, ctx){
+    const target = a.filter(x=>!x.startsWith('-'))[0];
+    const segs = target ? resolvePath(ctx.cwd, target) : [];
+    const node = getNode(ctx.fs, segs);
+    if(!node) return { error:`bash: cd: ${target}: No such file or directory` };
+    if(node.type!=='dir') return { error:`bash: cd: ${target}: Not a directory` };
+    return { stdout:'', cwdNew: segs };
+  }
+  function cmd_mkdir(a, ctx){
+    const target = a.filter(x=>!x.startsWith('-'))[0];
+    if(!target) return { error:'mkdir: missing operand' };
+    const segs = resolvePath(ctx.cwd, target);
+    const parent = getParent(ctx.fs, segs); const name = basename(segs);
+    if(!parent || parent.type!=='dir') return { error:`mkdir: cannot create directory '${target}': No such file or directory` };
+    if(parent.children[name]) return { error:`mkdir: cannot create directory '${target}': File exists` };
+    parent.children[name] = dir({});
+    return { stdout:'' };
+  }
+  function cmd_touch(a, ctx){
+    const target = a.filter(x=>!x.startsWith('-'))[0];
+    if(!target) return { error:'touch: missing file operand' };
+    const segs = resolvePath(ctx.cwd, target);
+    const parent = getParent(ctx.fs, segs); const name = basename(segs);
+    if(!parent || parent.type!=='dir') return { error:`touch: cannot touch '${target}': No such file or directory` };
+    if(!parent.children[name]) parent.children[name] = f('');
+    return { stdout:'' };
+  }
+  function cmd_cp(a, ctx){
+    const rest = a.filter(x=>!x.startsWith('-'));
+    const [src, dstArg] = rest;
+    if(!src || !dstArg) return { error:'cp: missing file operand' };
+    const srcSegs = resolvePath(ctx.cwd, src);
+    const srcNode = getNode(ctx.fs, srcSegs);
+    if(!srcNode) return { error:`cp: cannot stat '${src}': No such file or directory` };
+    if(srcNode.type==='dir') return { error:`cp: -r not specified; omitting directory '${src}'` };
+    let dstSegs = resolvePath(ctx.cwd, dstArg);
+    const dstNode = getNode(ctx.fs, dstSegs);
+    if(dstNode && dstNode.type==='dir') dstSegs = dstSegs.concat([basename(srcSegs)]);
+    const parent = getParent(ctx.fs, dstSegs);
+    if(!parent || parent.type!=='dir') return { error:`cp: cannot create '${dstArg}': No such file or directory` };
+    parent.children[basename(dstSegs)] = f(srcNode.content);
+    return { stdout:'' };
+  }
+  function cmd_mv(a, ctx){
+    const rest = a.filter(x=>!x.startsWith('-'));
+    const [src, dstArg] = rest;
+    if(!src || !dstArg) return { error:'mv: missing file operand' };
+    const srcSegs = resolvePath(ctx.cwd, src);
+    const srcNode = getNode(ctx.fs, srcSegs);
+    if(!srcNode) return { error:`mv: cannot stat '${src}': No such file or directory` };
+    let dstSegs = resolvePath(ctx.cwd, dstArg);
+    const dstNode = getNode(ctx.fs, dstSegs);
+    if(dstNode && dstNode.type==='dir') dstSegs = dstSegs.concat([basename(srcSegs)]);
+    const parent = getParent(ctx.fs, dstSegs);
+    if(!parent || parent.type!=='dir') return { error:`mv: cannot move to '${dstArg}': No such file or directory` };
+    parent.children[basename(dstSegs)] = srcNode;
+    const srcParent = getParent(ctx.fs, srcSegs);
+    delete srcParent.children[basename(srcSegs)];
+    return { stdout:'' };
+  }
+  function cmd_rm(a, ctx){
+    const flags = a.filter(x=>x.startsWith('-')).join('');
+    const target = a.filter(x=>!x.startsWith('-'))[0];
+    if(!target) return { error:'rm: missing operand' };
+    const segs = resolvePath(ctx.cwd, target);
+    const node = getNode(ctx.fs, segs);
+    if(!node) return { error:`rm: cannot remove '${target}': No such file or directory` };
+    if(node.type==='dir' && !flags.includes('r')) return { error:`rm: cannot remove '${target}': Is a directory` };
+    const parent = getParent(ctx.fs, segs);
+    delete parent.children[basename(segs)];
+    return { stdout:'' };
+  }
+  function readFileArg(fs, cwd, target){
+    const segs = resolvePath(cwd, target);
+    const node = getNode(fs, segs);
+    if(!node) return { error:`cannot access '${target}': No such file or directory` };
+    if(node.type==='dir') return { error:`${target}: Is a directory` };
+    return { content: node.content };
+  }
+  function cmd_cat(a, ctx){
+    const targets = a.filter(x=>!x.startsWith('-'));
+    if(targets.length===0){
+      if(ctx.stdin) return { stdout: ctx.stdin.join('\n') };
+      return { error:'cat: missing operand' };
+    }
+    const parts = [];
+    for(const t of targets){
+      const r = readFileArg(ctx.fs, ctx.cwd, t);
+      if(r.error) return { error:`cat: ${r.error}` };
+      parts.push(r.content.replace(/\n$/, ''));
+    }
+    return { stdout: parts.join('\n') };
+  }
+  function cmd_less(a, ctx){ return cmd_cat(a, ctx); }
+  function matchPattern(line, pattern, insensitive){
+    return insensitive ? line.toLowerCase().includes(pattern.toLowerCase()) : line.includes(pattern);
+  }
+  function cmd_grep(a, ctx){
+    let flags = ''; const rest = [];
+    for(const x of a){ if(/^-[a-zA-Z]+$/.test(x)) flags += x.slice(1); else rest.push(x); }
+    const recursive = flags.includes('r'), insensitive = flags.includes('i');
+    const pattern = rest[0]; const fileArgs = rest.slice(1);
+    if(!pattern) return { error:'grep: missing pattern' };
+    if(fileArgs.length===0){
+      const lines = ctx.stdin || [];
+      return { stdout: lines.filter(l=>matchPattern(l, pattern, insensitive)).join('\n') };
+    }
+    const collected = [];
+    for(const fa of fileArgs){
+      if(fa.includes('*') || fa.includes('?')){
+        const cwdNode = getNode(ctx.fs, ctx.cwd);
+        const re = globToRegex(fa);
+        for(const name of Object.keys(cwdNode.children).sort()){
+          const child = cwdNode.children[name];
+          if(child.type==='file' && re.test(name)) collected.push({ label:name, content:child.content });
+        }
+        continue;
+      }
+      const segs = resolvePath(ctx.cwd, fa);
+      const node = getNode(ctx.fs, segs);
+      if(!node) return { error:`grep: ${fa}: No such file or directory` };
+      if(node.type==='dir'){
+        if(!recursive) return { error:`grep: ${fa}: Is a directory` };
+        for(const entry of walkAll(node, [])){
+          if(entry.node.type==='file'){
+            const label = (fa==='.'?'.':fa) + '/' + entry.segs.join('/');
+            collected.push({ label, content: entry.node.content });
+          }
+        }
+      } else {
+        collected.push({ label: fa, content: node.content });
+      }
+    }
+    const multi = collected.length > 1;
+    const outLines = [];
+    for(const { label, content } of collected){
+      for(const line of content.split('\n')){
+        if(!line.length) continue;
+        if(matchPattern(line, pattern, insensitive)) outLines.push(multi ? `${label}:${line}` : line);
+      }
+    }
+    return { stdout: outLines.join('\n') };
+  }
+  function cmd_find(a, ctx){
+    let path = '.', rest = a;
+    if(a[0] !== '-name'){ path = a[0]; rest = a.slice(1); }
+    const nameIdx = rest.indexOf('-name');
+    if(nameIdx === -1) return { error:'find: missing -name pattern' };
+    const pattern = rest[nameIdx+1];
+    const segs = resolvePath(ctx.cwd, path);
+    const startNode = getNode(ctx.fs, segs);
+    if(!startNode) return { error:`find: '${path}': No such file or directory` };
+    const re = globToRegex(pattern);
+    const results = [];
+    for(const entry of walkAll(startNode, [])){
+      if(re.test(basename(entry.segs))) results.push(path.replace(/\/$/, '') + '/' + entry.segs.join('/'));
+    }
+    return { stdout: results.join('\n') };
+  }
+  function cmd_chmod(a, ctx){
+    const [mode, target] = a;
+    if(!mode || !target) return { error:'chmod: missing operand' };
+    const segs = resolvePath(ctx.cwd, target);
+    const node = getNode(ctx.fs, segs);
+    if(!node) return { error:`chmod: cannot access '${target}': No such file or directory` };
+    let setExec = null;
+    if(mode.includes('+x')) setExec = true;
+    else if(mode.includes('-x')) setExec = false;
+    else if(/^[0-7]{3}$/.test(mode)) setExec = [...mode].some(d => parseInt(d,8) % 2 === 1);
+    if(setExec === null) return { error:`chmod: invalid mode: '${mode}'` };
+    node.exec = setExec;
+    return { stdout:'' };
+  }
+  function cmd_export(a, ctx){
+    const m = (a[0]||'').match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+    if(!m) return { error:'export: usage: export NAME=value' };
+    ctx.env[m[1]] = m[2];
+    return { stdout:'' };
+  }
+  function cmd_echo(a, ctx){ return { stdout: a.join(' ') }; }
+
+  function countLines(content){
+    if(!content) return 0;
+    const stripped = content.endsWith('\n') ? content.slice(0,-1) : content;
+    return stripped.length ? stripped.split('\n').length : 0;
+  }
+  function cmd_wc(a, ctx){
+    const targets = a.filter(x=>!x.startsWith('-'));
+    if(targets.length===0){
+      const lines = ctx.stdin || [];
+      return { stdout: String(lines.length) };
+    }
+    if(targets.length===1){
+      const r = readFileArg(ctx.fs, ctx.cwd, targets[0]);
+      if(r.error) return { error:`wc: ${r.error}` };
+      return { stdout: countLines(r.content) + ' ' + targets[0] };
+    }
+    let total = 0;
+    for(const t of targets){
+      const r = readFileArg(ctx.fs, ctx.cwd, t);
+      if(r.error) return { error:`wc: ${r.error}` };
+      total += countLines(r.content);
+    }
+    return { stdout: String(total) + ' total' };
+  }
+
+  const FAKE_DATE = '2024-06-03';
+  function cmd_date(a, ctx){
+    const fmt = a[0];
+    if(fmt && fmt.startsWith('+')){
+      const out = fmt.slice(1)
+        .replace(/%F/g, FAKE_DATE)
+        .replace(/%Y/g, FAKE_DATE.slice(0,4))
+        .replace(/%m/g, FAKE_DATE.slice(5,7))
+        .replace(/%d/g, FAKE_DATE.slice(8,10));
+      return { stdout: out };
+    }
+    return { stdout: FAKE_DATE };
+  }
+
+  const BUILTINS = {
+    pwd:cmd_pwd, ls:cmd_ls, cd:cmd_cd, mkdir:cmd_mkdir, touch:cmd_touch,
+    cp:cmd_cp, mv:cmd_mv, rm:cmd_rm, cat:cmd_cat, less:cmd_less,
+    grep:cmd_grep, find:cmd_find, chmod:cmd_chmod, export:cmd_export, echo:cmd_echo,
+    wc:cmd_wc, date:cmd_date,
+  };
+
+  function runSub(cmdStr, ctx){
+    try {
+      const statements = parseInput(cmdStr);
+      const subCtx = { fs: ctx.fs, cwd: ctx.cwd, env: ctx.env };
+      const r = execStatements(statements, subCtx);
+      return (r.stdout || '').trim();
+    } catch(e){ return ''; }
+  }
+  function expandToken(tok, ctx){
+    let out = ''; let i = 0;
+    while(i < tok.length){
+      if(tok[i]==='$' && tok[i+1]==='('){
+        let depth=1, j=i+2;
+        while(j<tok.length && depth>0){
+          if(tok[j]==='(') depth++;
+          else if(tok[j]===')') depth--;
+          j++;
+        }
+        out += runSub(tok.slice(i+2, j-1), ctx);
+        i = j;
+      } else if(tok[i]==='$' && /[A-Za-z_]/.test(tok[i+1]||'')){
+        let j=i+1;
+        while(j<tok.length && /[A-Za-z0-9_]/.test(tok[j])) j++;
+        out += ctx.env[tok.slice(i+1,j)] ?? '';
+        i = j;
+      } else { out += tok[i]; i++; }
+    }
+    return out;
+  }
+
+  function runScriptLines(content, ctx){
+    const lines = content.split('\n').map(l=>l.trim()).filter(l=>l && !l.startsWith('#'));
+    const outputs = [];
+    for(const line of lines){
+      const r = execStatements(parseInput(line), ctx);
+      if(r.error) return r;
+      if(r.stdout) outputs.push(r.stdout);
+    }
+    return { stdout: outputs.join('\n') };
+  }
+  function dispatch(argv, ctx){
+    const cmdName = argv[0], args = argv.slice(1);
+    if(cmdName.startsWith('./') || cmdName.startsWith('../')){
+      const segs = resolvePath(ctx.cwd, cmdName);
+      const node = getNode(ctx.fs, segs);
+      if(!node) return { error:`bash: ${cmdName}: No such file or directory` };
+      if(node.type==='dir') return { error:`bash: ${cmdName}: Is a directory` };
+      if(!node.exec) return { error:`bash: ${cmdName}: Permission denied` };
+      return runScriptLines(node.content, ctx);
+    }
+    if(cmdName==='bash' || cmdName==='sh'){
+      const target = args[0];
+      const segs = resolvePath(ctx.cwd, target);
+      const node = getNode(ctx.fs, segs);
+      if(!node) return { error:`${cmdName}: ${target}: No such file or directory` };
+      return runScriptLines(node.content, ctx);
+    }
+    if(BUILTINS[cmdName]) return BUILTINS[cmdName](args, ctx);
+    return { error:`${cmdName}: command not found` };
+  }
+  function execOneStatement(parsed, ctx){
+    let stdin = null, out = '', err = null;
+    for(const rawArgv of parsed.stages){
+      const argv = rawArgv.map(t => expandToken(t, ctx));
+      const res = dispatch(argv, Object.assign({}, ctx, { stdin }));
+      if(res.error){ err = res.error; out=''; break; }
+      if(res.cwdNew) ctx.cwd = res.cwdNew;
+      out = res.stdout ?? '';
+      stdin = out === '' ? [] : out.split('\n');
+    }
+    if(!err && parsed.redir){
+      const redirTarget = expandToken(parsed.redir.target, ctx);
+      const segs = resolvePath(ctx.cwd, redirTarget);
+      const parent = getParent(ctx.fs, segs);
+      if(!parent || parent.type!=='dir'){
+        err = `bash: ${redirTarget}: No such file or directory`;
+      } else {
+        const name = basename(segs);
+        const existing = parent.children[name];
+        const newContent = out + (out.length ? '\n' : '');
+        if(parsed.redir.append && existing && existing.type==='file'){
+          parent.children[name] = f(existing.content + newContent);
+        } else {
+          parent.children[name] = f(newContent);
+        }
+        out = '';
+      }
+    }
+    return { stdout: err ? '' : out, error: err };
+  }
+  function execStatements(statements, ctx){
+    const outs = [];
+    for(const st of statements){
+      const r = execOneStatement(st, ctx);
+      if(r.error) return { stdout: outs.join('\n'), error: r.error };
+      if(r.stdout) outs.push(r.stdout);
+    }
+    return { stdout: outs.join('\n'), error: null };
+  }
+  function runLine(raw, state){
+    const ctx = { fs: state.fs, cwd: state.cwd, env: state.env };
+    let statements;
+    try { statements = parseInput(raw); } catch(e){ return { stdout:'', error:'bash: parse error' }; }
+    if(!statements.length) return { stdout:'', error:null };
+    const r = execStatements(statements, ctx);
+    state.cwd = ctx.cwd;
+    return r;
+  }
+
+  /* ---------------- level helpers ---------------- */
+  function exists(fs, cwd, path){ return getNode(fs, resolvePath(cwd, path)); }
+  function contentOf(fs, cwd, path){ const n = exists(fs, cwd, path); return n && n.type==='file' ? n.content : null; }
+  function execFlag(fs, cwd, path){ const n = exists(fs, cwd, path); return n ? !!n.exec : false; }
+  function setEq(a, b){
+    if(a.length !== b.length) return false;
+    const sa = a.slice().sort(), sb = b.slice().sort();
+    return sa.every((v,i) => v === sb[i]);
+  }
+  function namesOf(dirNode){ return Object.keys(dirNode.children).sort().map(n => dirNode.children[n].type==='dir' ? n+'/' : n); }
+  function lastSeg(pathStr){ return pathStr.split('/').filter(Boolean).pop() || ''; }
+  function allPathsWithExt(fs, ext){
+    return walkAll(fs, []).filter(e => e.node.type==='file' && basename(e.segs).endsWith(ext))
+      .map(e => './' + e.segs.join('/'));
+  }
+  function wcCount(stdout){
+    const n = parseInt((stdout||'').trim().split(/\s+/)[0], 10);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  /* ---------------- levels ---------------- */
+  const LEVELS = [
+    { stage:'Navigation', title:'Where are you?',
+      brief:"Print your current location in the filesystem.",
+      syntax:"pwd",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        if(res.error) return null;
+        return res.stdout.trim() === displayPath(st.cwd) ? true : null;
+      },
+      hint:"pwd (\"print working directory\") takes no arguments  -  just run it by itself." },
+
+    { stage:'Navigation', title:"What's in here?",
+      brief:"List everything sitting in your current folder.",
+      syntax:"ls",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        if(res.error) return null;
+        const expected = namesOf(getNode(st.fs, st.cwd));
+        const got = res.stdout.split('\n').map(s=>s.trim()).filter(Boolean);
+        return setEq(got, expected) ? true : null;
+      },
+      hint:"ls lists the current folder's contents  -  try it with no arguments." },
+
+    { stage:'Navigation', title:'Step into photos',
+      brief:"Move into the photos folder.",
+      syntax:"cd <folder>",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return setEq(st.cwd, ['photos']) ? true : null; },
+      hint:"cd takes the name of the folder you want to move into." },
+
+    { stage:'Navigation', title:'Back you go',
+      brief:"You're inside photos. Go back up one level, to its parent folder.",
+      syntax:"cd ..",
+      setup: (st) => { st.cwd = ['photos']; },
+      check(res, st){ return st.cwd.length===0 ? true : null; },
+      hint:"Two dots, .., mean \"the folder directly above this one\"." },
+
+    { stage:'Navigation', title:'Straight home',
+      brief:"You've wandered deep into reports/archive. Get back to your home folder in one command, no matter how deep you are.",
+      syntax:"cd\n(no argument at all)",
+      setup: (st) => { st.cwd = ['reports','archive']; },
+      check(res, st){ return st.cwd.length===0 ? true : null; },
+      hint:"Typing cd with no folder name takes you straight home, from anywhere." },
+
+    { stage:'Navigation', title:'No detour needed',
+      brief:"Read the contents of notes/todo.txt  -  without moving into the notes folder first.",
+      syntax:"cat <folder>/<file>",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        if(res.error) return null;
+        const c = contentOf(st.fs, [], 'notes/todo.txt');
+        return (st.cwd.length===0 && c!=null && res.stdout.trim() === c.trim()) ? true : null;
+      },
+      hint:"You can reach a file inside a folder by writing folder/file, e.g. notes/todo.txt  -  no cd required." },
+
+    { stage:'Navigation', title:'Peek without moving',
+      brief:"List what's inside the reports folder, without cd-ing into it.",
+      syntax:"ls <folder>",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        if(res.error) return null;
+        const expected = namesOf(getNode(st.fs, ['reports']));
+        const got = res.stdout.split('\n').map(s=>s.trim()).filter(Boolean);
+        return (st.cwd.length===0 && setEq(got, expected)) ? true : null;
+      },
+      hint:"ls can take a folder name as an argument: ls reports  -  you don't have to be inside it." },
+
+    { stage:'Navigation', title:'Two steps at once',
+      brief:"Move directly into reports/archive in a single cd command  -  no need to cd twice.",
+      syntax:"cd <folder>/<subfolder>",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return setEq(st.cwd, ['reports','archive']) ? true : null; },
+      hint:"You can chain a path in one go: cd reports/archive." },
+
+    { stage:'Creating & organizing', title:'Make a workspace',
+      brief:"Create a new, empty folder called drafts.",
+      syntax:"mkdir <folder>",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ const n = exists(st.fs, [], 'drafts'); return (n && n.type==='dir') ? true : null; },
+      hint:"mkdir needs the name of the folder to create as its argument." },
+
+    { stage:'Creating & organizing', title:'Start a draft',
+      brief:"Create a new, empty file called draft1.txt inside the drafts folder.",
+      syntax:"touch <folder>/<file>",
+      setup: (st) => { st.cwd = []; if(!exists(st.fs, [], 'drafts')) st.fs.children.drafts = dir({}); },
+      check(res, st){ const n = exists(st.fs, [], 'drafts/draft1.txt'); return (n && n.type==='file') ? true : null; },
+      hint:"touch creates an empty file. Give it the full path: drafts/draft1.txt." },
+
+    { stage:'Creating & organizing', title:'Make a backup',
+      brief:"Create a backup copy of notes.txt called notes_backup.txt  -  the original should still be there afterwards.",
+      syntax:"cp <source> <destination>",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        const orig = contentOf(st.fs, [], 'notes.txt');
+        const copy = contentOf(st.fs, [], 'notes_backup.txt');
+        return (orig != null && copy != null && orig === copy) ? true : null;
+      },
+      hint:"cp makes a copy and leaves the original alone: cp notes.txt notes_backup.txt." },
+
+    { stage:'Creating & organizing', title:'Rename the draft',
+      brief:"Inside drafts, rename draft1.txt to intro.txt.",
+      syntax:"mv <old name> <new name>",
+      setup: (st) => {
+        st.cwd = [];
+        if(!exists(st.fs, [], 'drafts')) st.fs.children.drafts = dir({});
+        if(!exists(st.fs, [], 'drafts/draft1.txt')) st.fs.children.drafts.children['draft1.txt'] = f('');
+      },
+      check(res, st){
+        return (!exists(st.fs, [], 'drafts/draft1.txt') && exists(st.fs, [], 'drafts/intro.txt')) ? true : null;
+      },
+      hint:"mv can rename a file too: mv drafts/draft1.txt drafts/intro.txt." },
+
+    { stage:'Creating & organizing', title:'Clean up',
+      brief:"Delete the file old.log  -  it's not needed anymore.",
+      syntax:"rm <file>",
+      setup: (st) => { st.cwd = []; if(!exists(st.fs, [], 'old.log')) st.fs.children['old.log'] = f('x'); },
+      check(res, st){ return !exists(st.fs, [], 'old.log') ? true : null; },
+      hint:"rm removes the file you name: rm old.log." },
+
+    { stage:'Creating & organizing', title:'Read it',
+      brief:"Print the contents of readme.txt to the screen.",
+      syntax:"cat <file>   (or: less <file>)",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        if(res.error) return null;
+        const c = contentOf(st.fs, [], 'readme.txt');
+        return (c != null && res.stdout.trim() === c.trim()) ? true : null;
+      },
+      hint:"cat readme.txt (or less readme.txt) will print it out." },
+
+    { stage:'Searching', title:'Somebody mentioned an invoice',
+      brief:"You're in the reports folder. One of these files mentions the word \"invoice\"  -  find it without opening each one by hand.",
+      syntax:"grep <word> <file(s)>\ne.g. grep invoice *.txt",
+      setup: (st) => { st.cwd = ['reports']; },
+      check(res, st){ return (!res.error && res.stdout.includes('invoice')) ? true : null; },
+      hint:"grep searches inside files for a word. Try: grep invoice *.txt" },
+
+    { stage:'Searching', title:"Case doesn't matter",
+      brief:"Somewhere in these reports someone wrote \"vendor\", but you don't know how they capitalized it. Find it regardless of case.",
+      syntax:"grep -i <word> <file>\n-i = ignore case",
+      setup: (st) => { st.cwd = ['reports']; },
+      check(res, st){ return (!res.error && res.stdout.toLowerCase().includes('vendor') && res.stdout.length>0) ? true : null; },
+      hint:"grep matched nothing? The word is capitalized differently. A flag makes grep ignore case  -  grep -i" },
+
+    { stage:'Searching', title:'It could be anywhere',
+      brief:"Somewhere inside the reports folder (maybe deeper) there's a message marked URGENT. Find it without opening every subfolder by hand.",
+      syntax:"grep -r <word> <folder>\n-r = search subfolders too",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && res.stdout.includes('URGENT')) ? true : null; },
+      hint:"Searching one folder isn't enough here  -  grep can search subfolders too with a recursive flag: grep -r" },
+
+    { stage:'Searching', title:'Both at once',
+      brief:"Somewhere in the whole drive, someone wrote \"urgent\"  -  you don't know the folder OR the capitalization. Find every mention.",
+      syntax:"grep -ri <word> <folder>\ncombine flags: -ri (or -ir)",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && res.stdout.length>0 && res.stdout.toLowerCase().includes('urgent')) ? true : null; },
+      hint:"Try combining both flags in one go: grep -ri urgent ." },
+
+    { stage:'Searching', title:'A very specific file',
+      brief:"Somewhere in this whole drive there's a file named exactly budget.csv. Find its location.",
+      syntax:"find <folder> -name <filename>",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && res.stdout.includes('budget.csv')) ? true : null; },
+      hint:"find searches by filename across the whole tree: find . -name budget.csv" },
+
+    { stage:'Searching', title:'Every text file',
+      brief:"List every .txt file anywhere in the drive, using a wildcard so you don't have to name each one.",
+      syntax:'find <folder> -name "*.txt"\n* matches anything',
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        if(res.error) return null;
+        const got = res.stdout.split('\n').map(s=>s.trim()).filter(Boolean);
+        if(!got.length || !got.every(l => l.endsWith('.txt'))) return null;
+        const gotBases = got.map(lastSeg).sort();
+        const expBases = allPathsWithExt(st.fs, '.txt').map(lastSeg).sort();
+        return setEq(gotBases, expBases) ? true : null;
+      },
+      hint:"The * wildcard means \"anything\". Try: find . -name \"*.txt\"" },
+
+    { stage:'Searching', title:'Starts with Q',
+      brief:"Inside reports, find every file whose name starts with the letter q.",
+      syntax:'find <folder> -name "q*"',
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        if(res.error) return null;
+        const got = res.stdout.split('\n').map(s=>s.trim()).filter(Boolean);
+        if(!got.length) return null;
+        const gotBases = got.map(lastSeg).sort();
+        return setEq(gotBases, ['q1.txt','q2.txt']) ? true : null;
+      },
+      hint:'find reports -name "q*"  -  the wildcard just needs to match the start of the name.' },
+
+    { stage:'Searching', title:'Folders count too',
+      brief:"Somewhere in this drive there's a folder named archive. Find where it lives (not a file this time).",
+      syntax:"find <folder> -name <name>",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && res.stdout.trim().includes('archive')) ? true : null; },
+      hint:"find matches folders too, not just files: find . -name archive" },
+
+    { stage:'Pipes & redirection', title:'Filter the listing',
+      brief:"You're in photos. List what's here, but only show entries with \"2024\" in the name.",
+      syntax:"ls | grep <word>\n| sends output into the next command",
+      setup: (st) => { st.cwd = ['photos']; },
+      check(res, st){ return (!res.error && res.stdout.trim() === '2024_trip.jpg') ? true : null; },
+      hint:"Pipe (|) sends one command's output into the next: ls | grep 2024" },
+
+    { stage:'Pipes & redirection', title:'Save the listing',
+      brief:"Save a listing of everything in your home folder into a new file called filelist.txt, instead of printing it to the screen.",
+      syntax:"ls > <file>\n> writes output into a file",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        const c = contentOf(st.fs, [], 'filelist.txt');
+        if(c == null) return null;
+        const got = c.split('\n').map(s=>s.trim()).filter(Boolean);
+        const expected = namesOf(getNode(st.fs, [])).filter(n => n !== 'filelist.txt');
+        return setEq(got, expected) ? true : null;
+      },
+      hint:"The > symbol redirects output into a file instead of the screen: ls > filelist.txt" },
+
+    { stage:'Pipes & redirection', title:'Add to the log',
+      brief:"Add a new line, \"Backup complete\", to the END of log.txt  -  without erasing what's already in there.",
+      syntax:'echo "text" >> <file>\n>> appends instead of overwriting',
+      setup: (st) => { st.cwd = []; if(exists(st.fs, [], 'log.txt') == null) st.fs.children['log.txt'] = f('System boot at 08:00\n'); },
+      check(res, st){
+        const c = contentOf(st.fs, [], 'log.txt') || '';
+        if(!c.includes('System boot at 08:00')) return null;
+        return c.includes('Backup complete') ? true : null;
+      },
+      hint:"A single > would erase what's there. Use >> to add to the end instead: echo \"Backup complete\" >> log.txt" },
+
+    { stage:'Pipes & redirection', title:'Count the lines',
+      brief:"How many lines are in notes.txt? Use wc to count instead of counting by eye.",
+      syntax:"wc -l <file>",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && wcCount(res.stdout)===2) ? true : null; },
+      hint:"wc -l counts lines for you: wc -l notes.txt" },
+
+    { stage:'Pipes & redirection', title:'Count the matches',
+      brief:"In the reports folder, count how many lines (across every .txt file) mention \"vendor\", in any capitalization.",
+      syntax:'grep -ri <word> *.txt | wc -l',
+      setup: (st) => { st.cwd = ['reports']; },
+      check(res, st){ return (!res.error && wcCount(res.stdout)===2) ? true : null; },
+      hint:"Pipe grep's matching lines into wc -l to count them: grep -ri vendor *.txt | wc -l" },
+
+    { stage:'Pipes & redirection', title:'Count found files',
+      brief:"Count how many .txt files exist in the whole drive  -  without listing them all out and counting by hand.",
+      syntax:'find <folder> -name "*.txt" | wc -l',
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && wcCount(res.stdout)===allPathsWithExt(st.fs,'.txt').length) ? true : null; },
+      hint:'Pipe find\'s results into wc -l to count them: find . -name "*.txt" | wc -l' },
+
+    { stage:'Pipes & redirection', title:'Recursive count',
+      brief:"Now count how many lines across the WHOLE drive (not just reports) mention \"urgent\", in any case.",
+      syntax:"grep -ri <word> <folder> | wc -l",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && wcCount(res.stdout)===2) ? true : null; },
+      hint:"Combine -r, -i, and a pipe into wc -l: grep -ri urgent . | wc -l" },
+
+    { stage:'Permissions', title:'Ask for permission',
+      brief:"Before run.sh can be executed directly, give it execute permission.",
+      syntax:"chmod +x <file>",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return execFlag(st.fs, [], 'run.sh') ? true : null; },
+      hint:"chmod +x turns on the execute permission: chmod +x run.sh" },
+
+    { stage:'Permissions', title:'The numeric way',
+      brief:"There's another script, cleanup.sh, that also needs to be executable. This time, use the numeric permission mode instead of +x.",
+      syntax:"chmod 755 <file>\n7 5 5 = you / group / everyone else; an odd last digit means \"executable\"",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return execFlag(st.fs, [], 'cleanup.sh') ? true : null; },
+      hint:"755 turns on read+write+execute for you, and read+execute for everyone else: chmod 755 cleanup.sh" },
+
+    { stage:'Environment variables', title:'Name yourself',
+      brief:"Store your name in an environment variable called NAME, then print a short greeting using it.",
+      syntax:"export NAME=YourName\necho $NAME",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        if(!st.env.NAME) return null;
+        return res.stdout.includes(st.env.NAME) ? true : null;
+      },
+      progress(res, st){
+        if(!res.error && st.env.NAME && !res.stdout.includes(st.env.NAME)){
+          return 'Good, NAME is set to "' + st.env.NAME + '". Now, as a second command: echo $NAME';
+        }
+        return null;
+      },
+      hint:"First set it: export NAME=YourName  -  then, as a separate command, echo $NAME so it gets substituted in." },
+
+    { stage:'Environment variables', title:'Two variables',
+      brief:'Store your name in NAME and your role in ROLE (e.g. "intern"), then print both in one line, like "Fran is an intern".',
+      syntax:'export NAME=YourName\nexport ROLE=YourRole\necho "$NAME is a $ROLE"',
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        if(!st.env.NAME || !st.env.ROLE) return null;
+        return (res.stdout.includes(st.env.NAME) && res.stdout.includes(st.env.ROLE)) ? true : null;
+      },
+      progress(res, st){
+        if(res.error) return null;
+        if(!st.env.NAME) return null;
+        if(!st.env.ROLE) return 'Good, NAME is set. Now also: export ROLE=YourRole';
+        if(!(res.stdout.includes(st.env.NAME) && res.stdout.includes(st.env.ROLE))){
+          return 'Both variables are set  -  now print them together: echo "$NAME is a $ROLE"';
+        }
+        return null;
+      },
+      hint:'export NAME=YourName, then export ROLE=YourRole, then echo "$NAME is a $ROLE".' },
+
+    { stage:'Environment variables', title:'Save your intro',
+      brief:"Write your name into a new file called whoami.txt, using the NAME variable you already set  -  don't retype your name.",
+      syntax:'echo "$NAME" > <file>',
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        if(!st.env.NAME) return null;
+        const c = contentOf(st.fs, [], 'whoami.txt');
+        return (c != null && c.trim() === st.env.NAME) ? true : null;
+      },
+      hint:'echo "$NAME" > whoami.txt  -  $NAME expands to whatever you exported earlier.' },
+
+    { stage:'Scripts', title:'Look before you run',
+      brief:"Before running any script, it's good practice to peek inside it. Print the contents of run.sh to see its shebang line and what it does.",
+      syntax:"cat <script>.sh",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && res.stdout.includes('#!/bin/bash') && res.stdout.includes('Deploy complete')) ? true : null; },
+      hint:"cat run.sh  -  the first line, #!/bin/bash, tells the system which interpreter runs the script." },
+
+    { stage:'Scripts', title:'Run it',
+      brief:"Now that run.sh is executable, run the script itself.",
+      syntax:"./<script>.sh\n./ means \"right here in this folder\"",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && res.stdout.trim() === 'Deploy complete.') ? true : null; },
+      hint:"Bash won't look in the current folder automatically  -  spell it out with ./ right before the filename: ./run.sh" },
+
+    { stage:'Scripts', title:'Ask bash for today',
+      brief:"Use command substitution to print today's date: run a command inside $( ) and let bash insert its output.",
+      syntax:"echo $(date +%F)\n$( ) inserts a command's output right there",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && res.stdout.trim() === FAKE_DATE) ? true : null; },
+      hint:"Wrap the command in $( ): echo $(date +%F)" },
+
+    { stage:'Scripts', title:'A dated file',
+      brief:"Create a new, empty file named notes_<today's date>.txt, inserting today's date automatically instead of typing it by hand.",
+      syntax:"touch notes_$(date +%F).txt",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ const n = exists(st.fs, [], 'notes_'+FAKE_DATE+'.txt'); return (n && n.type==='file') ? true : null; },
+      hint:"Insert the date right inside the filename: touch notes_$(date +%F).txt" },
+
+    { stage:'Scripts', title:'A dated rename',
+      brief:"Rename notes.txt to notes_<today's date>_final.txt, again inserting the date automatically.",
+      syntax:"mv notes.txt notes_$(date +%F)_final.txt",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        return (!exists(st.fs, [], 'notes.txt') && exists(st.fs, [], 'notes_'+FAKE_DATE+'_final.txt')) ? true : null;
+      },
+      hint:"mv notes.txt notes_$(date +%F)_final.txt" },
+
+    { stage:'Scripts', title:'Combine and count',
+      brief:'Print one line, "Lines: N", where N is the number of lines in notes_backup.txt  -  use command substitution to insert the count.',
+      syntax:'echo "Lines: $(cat notes_backup.txt | wc -l)"\n(a pipe can live inside a substitution too)',
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && res.stdout.trim() === 'Lines: 2') ? true : null; },
+      hint:'Nest one command inside another: echo "Lines: $(cat notes_backup.txt | wc -l)"' },
+
+    { stage:'Mixed challenges', title:'Any CSV',
+      brief:"Find every .csv file anywhere in the drive.",
+      syntax:'find <folder> -name "*.csv"',
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        if(res.error) return null;
+        const got = res.stdout.split('\n').map(s=>s.trim()).filter(Boolean);
+        if(!got.length || !got.every(l => l.endsWith('.csv'))) return null;
+        const gotBases = got.map(lastSeg).sort();
+        const expBases = allPathsWithExt(st.fs, '.csv').map(lastSeg).sort();
+        return setEq(gotBases, expBases) ? true : null;
+      },
+      hint:'find . -name "*.csv"' },
+
+    { stage:'Mixed challenges', title:'Folders only',
+      brief:"List only the folders in your home directory (not the files), using a pipe.",
+      syntax:"ls | grep /\nfolder names end with /",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        if(res.error) return null;
+        const got = res.stdout.split('\n').map(s=>s.trim()).filter(Boolean);
+        const expected = namesOf(getNode(st.fs, [])).filter(n=>n.endsWith('/'));
+        return setEq(got, expected) ? true : null;
+      },
+      hint:"ls marks folders with a trailing slash  -  filter for it: ls | grep /" },
+
+    { stage:'Mixed challenges', title:'Not just text files',
+      brief:"You're inside reports/archive. grep works on any text-based file, not just .txt  -  search budget.csv for the word \"amount\".",
+      syntax:"grep <word> <file>",
+      setup: (st) => { st.cwd = ['reports','archive']; },
+      check(res, st){ return (!res.error && res.stdout.includes('amount')) ? true : null; },
+      hint:"grep amount budget.csv  -  it doesn't care about the file extension." },
+
+    { stage:'Mixed challenges', title:'Dated backup of a report',
+      brief:"From your home folder, make a dated copy of reports/q1.txt, naming it reports/q1_<today's date>.txt.",
+      syntax:"cp reports/q1.txt reports/q1_$(date +%F).txt",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        const orig = contentOf(st.fs, [], 'reports/q1.txt');
+        const copy = contentOf(st.fs, [], 'reports/q1_'+FAKE_DATE+'.txt');
+        return (orig != null && copy != null && orig === copy) ? true : null;
+      },
+      hint:"cp reports/q1.txt reports/q1_$(date +%F).txt" },
+
+    { stage:'Mixed challenges', title:'Two steps, one script',
+      brief:"There's one more script, setup.sh, that's never been touched. Give it execute permission AND run it  -  you can do both in one line.",
+      syntax:"chmod +x setup.sh; ./setup.sh\n(or as two separate commands)",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && res.stdout.trim() === 'Setup done.') ? true : null; },
+      progress(res, st){
+        if(!res.error && execFlag(st.fs, [], 'setup.sh') && res.stdout.trim() !== 'Setup done.'){
+          return 'Good, setup.sh is executable now. Run it: ./setup.sh';
+        }
+        return null;
+      },
+      hint:"chmod +x setup.sh; ./setup.sh  -  or run them as two separate commands." },
+
+    { stage:'Mixed challenges', title:'Save the count',
+      brief:"Save how many .txt files exist in the whole drive into a new file called txt_count.txt, instead of printing the number.",
+      syntax:'find <folder> -name "*.txt" | wc -l > <file>',
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        const c = contentOf(st.fs, [], 'txt_count.txt');
+        if(c == null) return null;
+        const n = wcCount(c);
+        const expected = allPathsWithExt(st.fs, '.txt').filter(p => lastSeg(p) !== 'txt_count.txt').length;
+        return n === expected ? true : null;
+      },
+      hint:'find . -name "*.txt" | wc -l > txt_count.txt' },
+
+    { stage:'Mixed challenges', title:'A dated log entry',
+      brief:'Append a line to log.txt saying "Backup on <today\'s date>", using command substitution for the date.',
+      syntax:'echo "Backup on $(date +%F)" >> <file>',
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        const c = contentOf(st.fs, [], 'log.txt') || '';
+        return (c.includes('System boot at 08:00') && c.includes('Backup on '+FAKE_DATE)) ? true : null;
+      },
+      hint:'echo "Backup on $(date +%F)" >> log.txt' },
+
+    { stage:'Mixed challenges', title:'Starts with 2',
+      brief:"Somewhere in the drive, find every file that starts with the number 2.",
+      syntax:'find <folder> -name "2*"',
+      setup: (st) => { st.cwd = []; },
+      check(res, st){
+        if(res.error) return null;
+        const got = res.stdout.split('\n').map(s=>s.trim()).filter(Boolean);
+        if(!got.length) return null;
+        const gotBases = got.map(lastSeg).sort();
+        return setEq(gotBases, ['2024_trip.jpg']) ? true : null;
+      },
+      hint:'find . -name "2*"' },
+
+    { stage:'Mixed challenges', title:'How long is the readme?',
+      brief:"Count how many lines are in readme.txt.",
+      syntax:"wc -l <file>",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && wcCount(res.stdout)===2) ? true : null; },
+      hint:"wc -l readme.txt" },
+
+    { stage:'Mixed challenges', title:'The grand finale',
+      brief:"Last one: across the WHOLE drive, count how many lines mention the word \"vendor\", in any capitalization.",
+      syntax:"grep -ri <word> <folder> | wc -l",
+      setup: (st) => { st.cwd = []; },
+      check(res, st){ return (!res.error && wcCount(res.stdout)===2) ? true : null; },
+      hint:"grep -ri vendor . | wc -l" },
+  ];
+
+  const TOTAL = LEVELS.length;
+
+  /* ---------------- game state & persistence ---------------- */
+  const STORAGE_KEY = 'bashcamp_progress_v2';
+  let state = null;
+
+  function freshState(){
+    return { fs: makeWorldFS(), cwd: [], env: {}, levelIndex: 0, score: 0 };
+  }
+  function loadState(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return freshState();
+      const parsed = JSON.parse(raw);
+      if(typeof parsed.levelIndex !== 'number' || !parsed.fs) return freshState();
+      if(parsed.levelIndex >= TOTAL) parsed.levelIndex = TOTAL;
+      return parsed;
+    } catch(e){ return freshState(); }
+  }
+  function saveState(){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e){ /* ignore */ }
+  }
+
+  /* ---------------- UI wiring ---------------- */
+  const termBody = document.getElementById('termBody');
+  const cmdInput = document.getElementById('cmdInput');
+  const promptLabel = document.getElementById('promptLabel');
+  const termCwdLabel = document.getElementById('termCwdLabel');
+  const missionTag = document.getElementById('missionTag');
+  const missionTitle = document.getElementById('missionTitle');
+  const missionBrief = document.getElementById('missionBrief');
+  const missionSyntax = document.getElementById('missionSyntax');
+  const missionSyntaxText = document.getElementById('missionSyntaxText');
+  const hintBox = document.getElementById('hintBox');
+  const hintText = document.getElementById('hintText');
+  const scoreVal = document.getElementById('scoreVal');
+  const levelLabel = document.getElementById('levelLabel');
+  const progressFill = document.getElementById('progressFill');
+  const resetBtn = document.getElementById('resetBtn');
+
+  function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function printLine(type, text){
+    const div = document.createElement('div');
+    div.className = 'line ' + type;
+    if(type === 'cmd'){
+      div.innerHTML = '<span class="p">' + esc(promptPath(state.cwd)) + '$</span> ' + esc(text);
+    } else {
+      div.textContent = text;
+    }
+    termBody.appendChild(div);
+    termBody.scrollTop = termBody.scrollHeight;
+  }
+
+  function refreshHeader(){
+    promptLabel.textContent = promptPath(state.cwd) + '$';
+    termCwdLabel.textContent = 'yury@bashcamp:' + promptPath(state.cwd);
+    scoreVal.textContent = state.score;
+    const shown = Math.min(state.levelIndex + 1, TOTAL);
+    levelLabel.textContent = 'Level ' + shown + ' / ' + TOTAL;
+    progressFill.style.width = Math.round((state.levelIndex / TOTAL) * 100) + '%';
+  }
+
+  function showLevel(){
+    if(state.levelIndex >= TOTAL){
+      missionTag.textContent = 'Finished';
+      missionTitle.textContent = 'You made it through camp!';
+      missionBrief.textContent = 'Every mission is cleared. Final score: ' + state.score + '.';
+      missionSyntax.hidden = true;
+      hintBox.hidden = true;
+      printLine('sys', '');
+      printLine('ok', 'All missions complete  -  nice work. Final score: ' + state.score + '.');
+      printLine('sys', 'Hit "Reset progress" any time to play through again.');
+      refreshHeader();
+      saveState();
+      return;
+    }
+    const lvl = LEVELS[state.levelIndex];
+    if(lvl.setup) lvl.setup(state);
+    missionTag.textContent = lvl.stage;
+    missionTitle.textContent = lvl.title;
+    missionBrief.textContent = lvl.brief;
+    missionSyntax.hidden = false;
+    missionSyntax.open = false;
+    missionSyntaxText.textContent = lvl.syntax;
+    hintBox.hidden = false;
+    hintBox.open = false;
+    hintText.textContent = lvl.hint;
+    printLine('sys', '');
+    printLine('sys', ' -  Mission ' + (state.levelIndex+1) + ': ' + lvl.title + '  - ');
+    printLine('sys', lvl.brief);
+    refreshHeader();
+    saveState();
+  }
+
+  function handleHelp(){
+    printLine('out', [
+      'Commands covered so far: pwd, ls, cd, mkdir, touch, cp, mv, rm, cat, less,',
+      'grep (-i, -r), find (-name), wc (-l), pipes (|), redirection (> >>),',
+      'chmod (+x or 755), export, echo, $VAR, $(command), ./script.sh.',
+      'Type "clear" to wipe the screen. Stuck? Open "Need a hint?" in the mission card.',
+      'Progress saves automatically.'
+    ].join('\n'));
+  }
+
+  function submit(){
+    const raw = cmdInput.value;
+    if(!raw.trim()) return;
+    printLine('cmd', raw);
+    cmdInput.value = '';
+
+    const trimmed = raw.trim();
+    if(trimmed === 'clear'){ termBody.innerHTML = ''; return; }
+    if(trimmed === 'help'){ handleHelp(); return; }
+
+    const res = runLine(raw, state);
+    if(res.error) printLine('err', res.error);
+    else if(res.stdout) printLine('out', res.stdout);
+
+    if(state.levelIndex >= TOTAL) { saveState(); return; }
+
+    const lvl = LEVELS[state.levelIndex];
+    let pass = false;
+    try { pass = lvl.check(res, state) === true; } catch(e){ pass = false; }
+
+    if(pass){
+      state.score += 10;
+      state.levelIndex += 1;
+      printLine('ok', 'Nailed it! +10 points.');
+      showLevel();
+    } else {
+      let tip = null;
+      if(lvl.progress){ try { tip = lvl.progress(res, state); } catch(e){ tip = null; } }
+      if(tip) printLine('tip', tip);
+      else printLine('hint', 'Not quite yet  -  try again, or open "Need a hint?" below if you want a nudge.');
+      saveState();
+      refreshHeader();
+    }
+  }
+
+  /* command history recall */
+  let history = [];
+  let histPos = 0;
+  cmdInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      if(cmdInput.value.trim()){ history.push(cmdInput.value); histPos = history.length; }
+      submit();
+    } else if(e.key === 'ArrowUp'){
+      if(histPos > 0){ histPos--; cmdInput.value = history[histPos] || ''; }
+      e.preventDefault();
+    } else if(e.key === 'ArrowDown'){
+      if(histPos < history.length){ histPos++; cmdInput.value = history[histPos] || ''; }
+      e.preventDefault();
+    }
+  });
+
+  let resetArmed = false;
+  let resetTimer = null;
+  resetBtn.addEventListener('click', () => {
+    if(!resetArmed){
+      resetArmed = true;
+      resetBtn.textContent = 'Click again to confirm';
+      resetTimer = setTimeout(() => { resetArmed = false; resetBtn.textContent = 'Reset progress'; }, 5000);
+      return;
+    }
+    clearTimeout(resetTimer);
+    resetArmed = false;
+    resetBtn.textContent = 'Reset progress';
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+    state = freshState();
+    termBody.innerHTML = '';
+    printLine('sys', 'Progress reset. Fresh drive, fresh start.');
+    showLevel();
+    cmdInput.focus();
+  });
+
+  function boot(initial){
+    state = initial;
+    printLine('sys', 'Welcome to Bash Camp. Small missions, real commands, no pressure.');
+    showLevel();
+    cmdInput.focus();
+  }
+
+  if(window.claude && window.claude.hot){
+    window.claude.hot.snapshot(() => state);
+    if(window.claude.hot.ready) window.claude.hot.ready((data) => boot(data && data.fs ? data : loadState()));
+    else boot(loadState());
+  } else {
+    boot(loadState());
+  }
+
+  document.body.addEventListener('click', (e) => {
+    if(e.target === document.body || e.target.classList.contains('term') || e.target.classList.contains('term-body')) cmdInput.focus();
+  });
+})();
+</script>
+
+</body></html>
