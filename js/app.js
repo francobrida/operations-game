@@ -94,9 +94,11 @@
         h('div', { class: 'top-stats' }, 'Total score: ', h('b', null, total))),
       h('section', { class: 'hero' },
         h('p', null, 'Pick what to practice. Every track stops exactly where the Final Case needs it. Short sessions: one level takes 10–15 minutes.'),
-        lastT ? h('button', { class: 'primary', type: 'button', onclick: () => go('#/p/' + last.track + '/' + last.li + '/' + last.mi) },
-          'Continue where I left off ▸ ', h('span', { class: 'muted-on-primary' }, lastT.title + ' · Level ' + (last.li + 1) + ' · Mission ' + (last.mi + 1)))
-          : h('button', { class: 'primary', type: 'button', onclick: () => go('#/p/bash/0/0') }, 'Start with Bash ▸')),
+        h('div', { class: 'sol-actions' },
+          lastT ? h('button', { class: 'primary', type: 'button', onclick: () => go('#/p/' + last.track + '/' + last.li + '/' + last.mi) },
+            'Continue where I left off ▸ ', h('span', { class: 'muted-on-primary' }, lastT.title + ' · Level ' + (last.li + 1) + ' · Mission ' + (last.mi + 1)))
+            : h('button', { class: 'primary', type: 'button', onclick: () => go('#/p/bash/0/0') }, 'Start with Bash ▸'),
+          h('button', { class: 'ghost', type: 'button', onclick: openSync }, '⇄ Sync progress'))),
       h('div', { class: 'grid' }, ...cards),
       finalCard,
       footer());
@@ -166,6 +168,40 @@
           h('table', { class: 'cheat' }, ...sec.rows.map(([c, d]) => h('tr', null, h('td', null, h('code', null, c)), h('td', null, d))))))));
     document.body.append(modal);
     close.focus();
+  }
+  /* ---- sync between devices: copy a code here, paste it there (both ways merge) ---- */
+  function openSync() {
+    closeModal();
+    const close = h('button', { class: 'ghost', type: 'button', onclick: () => { closeModal(); render(); } }, 'Close');
+    const mine = h('textarea', { class: 'sync-code', readonly: true, rows: 4, 'aria-label': 'Your sync code' }, 'Preparing your code…');
+    const copyMsg = h('span', { class: 'muted small' });
+    const copy = h('button', { class: 'primary', type: 'button', onclick: async () => {
+      mine.select();
+      try { await navigator.clipboard.writeText(mine.value); copyMsg.textContent = 'Copied. Send it to your other device.'; }
+      catch (e) { copyMsg.textContent = 'Selected: copy it with Ctrl+C (or long-press → Copy).'; }
+    } }, 'Copy code');
+    const theirs = h('textarea', { class: 'sync-code', rows: 4, placeholder: 'Paste the code from your other device here', 'aria-label': 'Code from your other device' });
+    const importMsg = h('p', { class: 'small', 'aria-live': 'polite' });
+    const doImport = h('button', { class: 'primary', type: 'button', onclick: async () => {
+      try {
+        const n = await OT.store.importCode(theirs.value);
+        importMsg.className = 'small ok-text';
+        importMsg.textContent = n ? 'Done: ' + n + ' mission' + (n === 1 ? '' : 's') + ' updated. Nothing was lost.' : 'Already up to date: that code had nothing new.';
+        theirs.value = '';
+        mine.value = await OT.store.exportCode();
+      } catch (e) {
+        importMsg.className = 'small err-text';
+        importMsg.textContent = "That doesn't look like a sync code. Copy the whole thing, it starts with OT.";
+      }
+    } }, 'Import');
+    modal = h('div', { class: 'backdrop', onclick: e => { if (e.target === modal) { closeModal(); render(); } } },
+      h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Sync progress' },
+        h('div', { class: 'modal-head' }, h('h2', null, 'Sync progress'), close),
+        h('p', { class: 'muted small' }, 'Each device keeps its own progress. To move it, copy the code on one device and import it on the other. Both sides are merged and the best result of every mission is kept, so you can do it in either direction any time.'),
+        h('section', null, h('h3', null, '1 · Code from this device'), mine, h('div', { class: 'sol-actions' }, copy, copyMsg)),
+        h('section', null, h('h3', null, '2 · Paste a code from your other device'), theirs, h('div', { class: 'sol-actions' }, doImport), importMsg)));
+    document.body.append(modal);
+    OT.store.exportCode().then(code => { mine.value = code; }).catch(() => { mine.value = 'This browser cannot create sync codes.'; });
   }
   function closeModal() { if (modal) { modal.remove(); modal = null; } }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
