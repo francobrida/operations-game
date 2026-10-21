@@ -14,7 +14,7 @@
     return dir({
       'notes.txt': f('Buy milk\nCall Sam\n'),
       'old.log': f('2023-01-01 startup ok\n'),
-      'readme.txt': f('Welcome to the intern drive!\nEverything you need is somewhere in here.\n'),
+      'readme.txt': f('Welcome to the team drive!\nEverything you need is somewhere in here.\n'),
       'run.sh': f('#!/bin/bash\necho "Deploy complete."\n'),
       'setup.sh': f('#!/bin/bash\necho "Setup done."\n'),
       'cleanup.sh': f('#!/bin/bash\necho "Cleanup done."\n'),

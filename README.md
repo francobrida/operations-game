@@ -1,57 +1,83 @@
 # Operations Trainer
 
-A practice game for an Operations internship: Bash, SQL, Excel, Python and MongoDB on one shared
-fictional dataset (Sonora Royalties, a music royalties company), ending in a Final Case.
+A browser game for practicing the everyday toolkit of data operations work: Bash, SQL, Excel and
+Python, all on one shared fictional dataset, building up to a real-world incident you have to
+solve end to end.
 
-## How to open it
+**▶ Play it: [francobrida.github.io/operations-game](https://francobrida.github.io/operations-game/)** (works on mobile)
 
-Double-click `index.html`. Nothing to install, and it works offline (SQLite is bundled in `vendor/`).
+## The idea
 
-From the Python phase on (Pyodide) a local server will be needed. From this folder:
+Sonora Royalties is a made-up music royalties company. Its data has the kind of problems real
+pipelines have: a payments file imported twice, NULLs, artist names written three different ways,
+a song pointing to an artist that doesn't exist. Every track teaches its tool through short
+missions written like requests from coworkers ("Support says this client was paid twice, can you
+check?"), and every track stops exactly where the final case needs it:
+
+> *"You paid us twice for the same song in August."*
+
+Find the duplicates in SQL, trace the root cause in the import logs with Bash, build the summary
+for the client in Excel, and write the Python check that stops it from happening again.
+
+## Tracks
+
+| Track | What you practice | Status |
+|---|---|---|
+| Bash | Navigation, files, grep/find, pipes, redirection, permissions, scripts, `$(…)`, log digging with `cut \| sort \| uniq -c` | ✅ 62 missions |
+| SQL | SELECT to CTEs: filters, aggregates, GROUP BY/HAVING, duplicates, JOINs and orphans, data cleaning, date filters | ✅ 44 missions |
+| Excel | Formulas, COUNTIF/SUMIF, lookups, duplicates, a guided pivot table | next |
+| Python | CSV processing, duplicate detection, a small automation script | planned |
+| MongoDB | find(), projections, a basic aggregation (optional) | planned |
+| Final Case | One incident across all the tools, closed with a written report | planned |
+
+## How it works
+
+- **Answers are checked by their effect, not their text.** A Bash mission inspects the simulated
+  disk or the output; an SQL mission compares result sets, ignoring column order, letter case and
+  formatting. Any correct approach passes.
+- **Real SQLite in the browser** via [sql.js](https://github.com/sql-js/sql.js) (WebAssembly),
+  bundled locally so it works offline and from `file://`. Every query runs on a fresh copy of the
+  data, so nothing can break.
+- **A simulated Bash shell**: fake filesystem plus a small interpreter supporting pipes, `;`,
+  `>`/`>>`, variables, command substitution, scripts and ~20 commands.
+- **Progressive hints that don't spoil the answer**: hint 1 points at which part of *your* attempt
+  is off, hint 2 gives the concept, hint 3 a skeleton with blanks; the full solution, explained
+  piece by piece, only on request.
+- **Mistake detection** for common slips (`ORD BY`, `= NULL`, WHERE vs HAVING, `>` instead of
+  `>>`, a missing `./`…) with targeted tips, tracked over time.
+- **Progress** saved in the browser, with a sync code to move it between phone and computer.
+- **Plain JavaScript, no build step, no dependencies** besides sql.js. Tests run in Node and play
+  every mission with its official solution, plus accepted alternatives and common wrong answers.
+
+## Run it locally
+
+Open `index.html` with a double click. Or serve the folder:
 
 ```
 python -m http.server 8000
 ```
 
-then open http://localhost:8000
-
-Progress is saved in the browser (`localStorage`). Double-click and local server are different
-origins, so each keeps its own progress.
-
-## Status
-
-| Phase | Content | Status |
-|---|---|---|
-| 1 | Menu, shared dataset, progress, Bash track (5 levels, 62 missions) | done |
-| 2 | SQL track on real SQLite (5 levels, 44 missions) | done |
-| 3 | Excel | to do |
-| 4 | Python | to do |
-| 5 | MongoDB | to do |
-| 6 | The Final Case | to do |
-| 7 | Review mode, cheat sheets for the other tracks, polish | to do |
-
-## Layout
+Tests:
 
 ```
-index.html              loads the scripts in order (no modules, so double-click works)
-css/style.css
-js/data.js              shared dataset: artists, songs, payments, import_log, import logs
-js/storage.js           progress, scores and frequent mistakes in localStorage
-js/ui.js                DOM helpers
+node tests/bash.test.js
+node tests/sql.test.js
+```
+
+## Project layout
+
+```
+index.html              loads the scripts in order (no modules, so file:// works)
+js/data.js              the shared dataset: artists, songs, payments, import_log, import logs
 js/engine.js            mission runner shared by every track (hints, solution, scoring)
-js/app.js               menu, level screen, cheat sheet, routes (#/t/sql, #/p/sql/2/5)
-js/tracks/bash/         sim.js (fake disk + interpreter), missions.js, view.js (terminal)
-js/tracks/sql/          db.js (SQLite + result comparison), missions.js, view.js (editor + table)
-vendor/                 sql.js 1.10.3 (SQLite 3.45.2, MIT): sql-wasm.js, the wasm binary as base64 for
-                        file://, and the raw .wasm used by the tests
-tests/                  node tests/bash.test.js · node tests/sql.test.js
-legacy/                 the previous game (Bash Camp), kept as a backup
+js/app.js               menu, level screens, cheat sheet, sync, routing
+js/storage.js           progress, mistakes and sync codes in localStorage
+js/tracks/bash/         simulated shell, missions, terminal view
+js/tracks/sql/          SQLite wrapper and result comparison, missions, editor view
+vendor/                 sql.js 1.10.3 (SQLite 3.45.2, MIT license)
+tests/                  Node test suites
 ```
 
-## Adding a track
-
-Register `OT.tracks.<id>` with `levels` (each: `title`, `minutes`, `intro`, `cheat`, `missions`),
-`flat`, `cheatUpTo(level)` and `createView(pane, api)`. The view evaluates each attempt and calls
-`api.attempt({ ok, diagnosis, mistakes })`; the engine handles hints, solution, score, progress and
-the level summary. Each mission has `concept` (hint 2), `skeleton` (hint 3) and
-`solution: { cmd, parts }` (the solution explained piece by piece).
+A new track registers `OT.tracks.<id>` with its levels and a `createView(pane, api)`; the view
+evaluates attempts and reports them with `api.attempt({ ok, diagnosis, mistakes })`, and the shared
+engine does the rest.

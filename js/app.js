@@ -90,7 +90,7 @@
     const total = TRACKS.reduce((n, t) => n + (progress(t.id) ? progress(t.id).score : 0), 0);
     app.replaceChildren(
       h('header', { class: 'top' },
-        h('div', { class: 'brand' }, h('h1', null, 'Operations Trainer'), h('span', null, OT.data.company + ' · Operations internship practice')),
+        h('div', { class: 'brand' }, h('h1', null, 'Operations Trainer'), h('span', null, OT.data.company + ' · hands-on data operations practice')),
         h('div', { class: 'top-stats' }, 'Total score: ', h('b', null, total))),
       h('section', { class: 'hero' },
         h('p', null, 'Pick what to practice. Every track stops exactly where the Final Case needs it. Short sessions: one level takes 10–15 minutes.'),

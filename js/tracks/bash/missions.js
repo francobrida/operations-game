@@ -347,10 +347,10 @@
       partial: (res, st) => (!res.error && st.env.NAME) ? 'Good: NAME is now "' + st.env.NAME + '". Now print its value.' : null },
 
     { id: 'env-two', title: 'Two variables', setup: home,
-      brief: 'Store your name in NAME and your role in ROLE (for example "intern"), and print both on one line, like "Fran is an intern".',
+      brief: 'Store your name in NAME and your role in ROLE (for example "analyst"), and print both on one line, like "Fran is an analyst".',
       concept: 'Inside double quotes, variables are replaced by their values: you can mix text and variables in one echo.',
       skeleton: 'export ROLE=<role>   then   echo "$____ is an $____"',
-      solution: { cmd: 'export NAME=Fran; export ROLE=intern; echo "$NAME is an $ROLE"', parts: [['export NAME=Fran', 'First variable.'], ['export ROLE=intern', 'Second variable.'], ['echo "$NAME is an $ROLE"', 'Text with both variables inside.']] },
+      solution: { cmd: 'export NAME=Fran; export ROLE=analyst; echo "$NAME is an $ROLE"', parts: [['export NAME=Fran', 'First variable.'], ['export ROLE=analyst', 'Second variable.'], ['echo "$NAME is an $ROLE"', 'Text with both variables inside.']] },
       check: (res, st) => !!st.env.NAME && !!st.env.ROLE && res.stdout.includes(st.env.NAME) && res.stdout.includes(st.env.ROLE),
       partial: (res, st) => {
         if (res.error || !st.env.NAME) return null;
