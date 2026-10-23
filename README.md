@@ -17,7 +17,8 @@ check?"), and every track stops exactly where the final case needs it:
 > *"You paid us twice for the same song in August."*
 
 Find the duplicates in SQL, trace the root cause in the import logs with Bash, build the summary
-for the client in Excel, and write the Python check that stops it from happening again.
+for the client in Excel, write the Python check that stops it from happening again, and close
+it with a short written report. An optional MongoDB track asks the same questions with documents.
 
 ## Tracks
 
@@ -43,6 +44,10 @@ for the client in Excel, and write the Python check that stops it from happening
   different files, so hard-coded answers fail.
 - **A simulated Bash shell**: fake filesystem plus a small interpreter supporting pipes, `;`,
   `>`/`>>`, variables, command substitution, scripts and ~20 commands.
+- **A small spreadsheet engine** for the Excel track: formulas with `$` references and fill-down,
+  COUNTIF/SUMIF, VLOOKUP/XLOOKUP, sort, filter and pivot tables, written from scratch.
+- **A mini MongoDB shell**: `find()` with filters and projection, `sort()`/`limit()`,
+  `countDocuments()` and `aggregate()` with `$match`/`$group`, over the same data as documents.
 - **Progressive hints that don't spoil the answer**: hint 1 points at which part of *your* attempt
   is off, hint 2 gives the concept, hint 3 a skeleton with blanks; the full solution, explained
   piece by piece, only on request.
