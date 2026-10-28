@@ -21,6 +21,8 @@
     }
     return { done, review, points, total: ms.length };
   }
+  // Index of the track's top level (practice levels after it don't count).
+  function ceiling(track) { let i = track.levels.length - 1; while (i > 0 && track.levels[i].practice) i--; return i; }
   function firstPending(track, li) {
     const i = track.levels[li].missions.findIndex(m => !(OT.store.rec(track.id, m.id) || {}).done);
     return i === -1 ? 0 : i;
@@ -192,5 +194,5 @@
     return { destroy() { if (view && view.destroy) view.destroy(); } };
   }
 
-  OT.engine = { mountPlay, levelStats, firstPending, pointsFor };
+  OT.engine = { mountPlay, levelStats, firstPending, pointsFor, ceiling };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -48,7 +48,7 @@
   const flat = MISSIONS.map((m, mi) => ({ mission: m, li: 0, mi, gi: mi }));
 
   // Cheat sheet: the top level of each track involved, plus the writing checklist.
-  const cheatUpTo = () => REQUIRES.map(id => { const t = T[id]; const top = t.cheatUpTo(t.levels.length - 1); return { title: t.title, rows: top[top.length - 1].rows }; })
+  const cheatUpTo = () => REQUIRES.map(id => { const t = T[id]; const c = OT.engine.ceiling(t); return { title: t.title, rows: t.levels[c].cheat }; })
     .concat([{ title: 'Wrap-up', rows: CHECKLIST.map(([, label, why]) => [label, why]) }]);
 
   /* ---- step 6: the writing view ---- */

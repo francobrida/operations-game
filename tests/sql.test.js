@@ -24,8 +24,17 @@ const ROWS = {
   'inner-join': 13, 'join-where': 4, 'join-group': 7, 'left-join': 14, 'orphans': 1, 'left-count': 9, 'join-payments': 23,
   'clean-names': 27, 'join-clean': 26, 'coalesce': 27, 'case-when': 27, 'month-filter': 15, 'aug-dups': 6,
   'overpaid-each': 6, 'overpaid-total': 1, 'overpaid-artist': 5, 'final-report': 4,
+  'pa-long-songs': 5, 'pa-count-where': 1, 'pa-count-distinct': 1, 'pa-smallest': 1, 'pa-july-total': 1, 'pa-date-summary': 4, 'pa-short-per-artist': 6, 'pa-like-count': 1,
+  'pb-many-songs': 5, 'pb-avg-having': 4, 'pb-where-and-having': 4, 'pb-song-paid': 7, 'pb-max-per-date': 4, 'pb-plays-ranking': 5, 'pb-import-dates': 1, 'pb-spellings': 12,
+  'pc-chile-plays': 1, 'pc-songs-country': 4, 'pc-longest': 1, 'pc-no-songs': 1, 'pc-unpaid-songs': 4, 'pc-paid-country': 7, 'pc-top-plays': 3, 'pc-catalogue': 9,
+  'pd-clean-count': 8, 'pd-clean-country': 7, 'pd-or-trap': 3, 'pd-size-count': 3, 'pd-month-totals': 4, 'pd-null-avg': 1, 'pd-above-avg': 13, 'pd-many-months': 6,
 };
 const ALT = {
+  'pa-count-distinct': 'SELECT COUNT(*) FROM (SELECT DISTINCT country FROM artists)',
+  'pb-spellings': 'SELECT artist FROM payments GROUP BY artist ORDER BY artist',
+  'pd-or-trap': "SELECT * FROM payments WHERE amount > 100 AND artist IN ('Nico Valdés', 'Andes Trío')",
+  'pd-month-totals': "SELECT strftime('%Y-%m', payment_date), SUM(amount) FROM payments GROUP BY 1",
+  'pc-no-songs': 'SELECT name FROM artists WHERE id NOT IN (SELECT artist_id FROM songs)',
   'select-cols': 'select country, name from artists',
   'where-eq': "SELECT name FROM artists WHERE country LIKE 'argentina'",
   'order-limit': 'select plays, title from songs order by plays desc limit 3',
@@ -45,6 +54,12 @@ const ALT = {
 };
 // [mission, wrong query, mistake id expected among the detected tips (or null)]
 const WRONG = [
+  ['pa-smallest', 'SELECT id, artist, amount FROM payments ORDER BY amount LIMIT 1', null],
+  ['pd-or-trap', "SELECT * FROM payments WHERE amount > 100 AND artist = 'Nico Valdés' OR artist = 'Andes Trío'", null],
+  ['pd-clean-country', 'SELECT a.country, SUM(p.amount) FROM payments p JOIN artists a ON a.name = p.artist GROUP BY a.country', null],
+  ['pb-where-and-having', 'SELECT artist, COUNT(*) FROM payments GROUP BY artist HAVING COUNT(*) >= 2', null],
+  ['pc-catalogue', 'SELECT a.name, COUNT(s.id) FROM artists a JOIN songs s ON s.artist_id = a.id GROUP BY a.name ORDER BY COUNT(s.id) DESC, a.name', null],
+  ['pd-null-avg', 'SELECT AVG(amount), AVG(amount) FROM payments', null],
   ['where-eq', 'SELECT name FROM artists WHERE country = Argentina', 'unquoted-text'],
   ['order-limit', 'SELECT title, plays FROM songs ORDER BY plays LIMIT 3', null],
   ['order-limit', 'SELECT title, plays FROM songs ORD BY plays DESC LIMIT 3', 'ord-by'],

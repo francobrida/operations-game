@@ -7,7 +7,7 @@ const assert = require('assert');
 
 const base = path.join(__dirname, '..');
 globalThis.OT = { ui: { h: () => null } };
-for (const f of ['js/data.js', 'js/tracks/bash/sim.js', 'js/tracks/bash/missions.js', 'js/tracks/sql/missions.js',
+for (const f of ['js/data.js', 'js/engine.js', 'js/tracks/bash/sim.js', 'js/tracks/bash/missions.js', 'js/tracks/sql/missions.js',
   'js/tracks/excel/formula.js', 'js/tracks/excel/missions.js', 'js/tracks/python/harness.js', 'js/tracks/python/missions.js', 'js/tracks/final/case.js']) {
   vm.runInThisContext(fs.readFileSync(path.join(base, f), 'utf8'), { filename: f });
 }

@@ -15,6 +15,7 @@
   const FINAL_META = { id: 'final', icon: '★', title: 'The Final Case', blurb: '"You paid us twice for the same song in August." A full Operations case mixing SQL, Bash, Excel and Python, closed with a short written report.' };
   const finalMissing = () => FINAL_REQUIRES.filter(id => { const p = progress(id); return !p || !p.topDone; });
   const metaOf = id => TRACKS.find(t => t.id === id) || FINAL_META;
+  const REPO = 'https://github.com/francobrida/operations-game';
   const app = document.getElementById('app');
   let current = null;
 
@@ -25,7 +26,7 @@
     const total = t.flat.length;
     const done = t.flat.filter(x => (OT.store.rec(id, x.mission.id) || {}).done).length;
     const review = t.flat.filter(x => (OT.store.rec(id, x.mission.id) || {}).review).length;
-    const top = OT.engine.levelStats(t, t.levels.length - 1);
+    const top = OT.engine.levelStats(t, OT.engine.ceiling(t));
     return { done, total, review, score: OT.store.score(id), topDone: top.done === top.total };
   }
   function levelReached(t) {
@@ -116,7 +117,30 @@
       h('span', null, OT.store.isPersistent()
         ? 'Your progress is saved in this browser. Nothing touches real files: the disk and the database are make-believe.'
         : 'This browser does not allow saving: progress will be lost when you close the tab.'),
+      h('a', { class: 'star-link', href: REPO, target: '_blank', rel: 'noopener' }, '⭐ Star it on GitHub'),
       confirmButton('Erase all progress', 'Sure? This cannot be undone · confirm', () => { OT.store.resetAll(); go('#/'); }, { class: 'link' }));
+  }
+
+  /* ---- first visit: who made this, and a way to say thanks ---- */
+  const SEEN = 'operations_trainer_welcome';
+  function welcomeSeen() { try { return localStorage.getItem(SEEN) === '1'; } catch (e) { return true; } }
+  function openWelcome() {
+    closeModal();
+    try { localStorage.setItem(SEEN, '1'); } catch (e) { /* private mode: it just shows again */ }
+    const done = () => closeModal();
+    const start = h('button', { class: 'primary', type: 'button', onclick: done }, 'Start playing ▸');
+    modal = h('div', { class: 'backdrop', onclick: e => { if (e.target === modal) done(); } },
+      h('div', { class: 'modal welcome', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Welcome' },
+        h('span', { class: 'wave', 'aria-hidden': 'true' }, '👋'),
+        h('h2', null, 'Hi! Welcome to Operations Trainer'),
+        h('p', null, 'A free game to practice ', h('b', null, 'SQL, Bash, Excel and Python'), ' on one messy (and fictional) dataset, through short missions that end in a real-world case.'),
+        h('p', null, "I'm ", h('a', { class: 'star-link', href: 'https://github.com/francobrida', target: '_blank', rel: 'noopener' }, 'Franco'), ' and I built it while learning these tools myself, with Claude Code as my pair programmer. No sign-up, nothing to install: your progress stays in this browser.'),
+        h('p', null, 'If it helps you, a ', h('b', null, '⭐ on GitHub'), ' means a lot: it is how a small project like this gets noticed.'),
+        h('div', { class: 'sol-actions' },
+          h('a', { class: 'ghost', href: REPO, target: '_blank', rel: 'noopener', onclick: done }, '⭐ Star on GitHub'),
+          start)));
+    document.body.append(modal);
+    start.focus();
   }
 
   /* ---- track screen ---- */
@@ -129,7 +153,7 @@
       return h('div', { class: 'lcard' + (st.done === st.total ? ' complete' : '') },
         h('div', { class: 'lnum' }, li + 1),
         h('div', { class: 'lbody' },
-          h('div', { class: 'ltitle' }, lv.title, li === t.levels.length - 1 ? h('span', { class: 'badge' }, 'track ceiling') : null),
+          h('div', { class: 'ltitle' }, lv.title, lv.practice ? h('span', { class: 'badge' }, 'practice · optional') : li === OT.engine.ceiling(t) ? h('span', { class: 'badge' }, 'track ceiling') : null),
           h('p', null, lv.intro),
           h('div', { class: 'lmeta' }, progressBar(st.done, st.total),
             h('span', null, st.done + '/' + st.total + ' missions · ~' + lv.minutes + ' min'),
@@ -216,4 +240,5 @@
   OT.store.load();
   window.addEventListener('hashchange', render);
   render();
+  if (!welcomeSeen()) openWelcome();
 })(window);

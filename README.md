@@ -25,7 +25,7 @@ it with a short written report. An optional MongoDB track asks the same question
 | Track | What you practice | Status |
 |---|---|---|
 | Bash | Navigation, files, grep/find, pipes, redirection, permissions, scripts, `$(…)`, log digging with `cut \| sort \| uniq -c` | ✅ 62 missions |
-| SQL | SELECT to CTEs: filters, aggregates, GROUP BY/HAVING, duplicates, JOINs and orphans, data cleaning, date filters | ✅ 44 missions |
+| SQL | SELECT to CTEs: filters, aggregates, GROUP BY/HAVING, duplicates, JOINs and orphans, data cleaning, date filters, plus mixed-practice levels that revisit earlier concepts | ✅ 76 missions |
 | Excel | Formulas, COUNTIF/SUMIF, $ references, VLOOKUP/XLOOKUP, sort/filter, duplicates, pivot tables | ✅ 30 missions |
 | Python | Variables to functions, the csv module, sets and dicts for duplicates, an automation script that writes a report | ✅ 25 missions |
 | MongoDB | find(), projections, sort/limit, aggregate() with $match and $group (optional) | ✅ 10 missions |
