@@ -134,7 +134,7 @@
         h('span', { class: 'wave', 'aria-hidden': 'true' }, '👋'),
         h('h2', null, 'Hi! Welcome to Operations Trainer'),
         h('p', null, 'A free game to practice ', h('b', null, 'SQL, Bash, Excel and Python'), ' on one messy (and fictional) dataset, through short missions that end in a real-world case.'),
-        h('p', null, "I'm ", h('a', { class: 'star-link', href: 'https://github.com/francobrida', target: '_blank', rel: 'noopener' }, 'Franco'), ' and I built it while learning these tools myself, with Claude Code as my pair programmer. No sign-up, nothing to install: your progress stays in this browser.'),
+        h('p', null, "I'm ", h('a', { class: 'star-link', href: 'https://www.linkedin.com/in/francobridarolli/', target: '_blank', rel: 'noopener' }, 'Franco'), ' and I built it while learning these tools myself, with Claude Code as my pair programmer. No sign-up, nothing to install: your progress stays in this browser.'),
         h('p', null, 'If it helps you, a ', h('b', null, '⭐ on GitHub'), ' means a lot: it is how a small project like this gets noticed.'),
         h('div', { class: 'sol-actions' },
           h('a', { class: 'ghost', href: REPO, target: '_blank', rel: 'noopener', onclick: done }, '⭐ Star on GitHub'),
